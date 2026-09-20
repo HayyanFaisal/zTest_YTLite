@@ -1379,13 +1379,64 @@ static NSURL *newCoverURL(NSURL *originalURL) {
 //     return %orig(newCoverURL(arg1), arg2, arg3, arg4, arg5);
 // }
 // %end
-// Region Override — inject custom X-Goog-Country header
+// Region Override — robust YouTube region spoofing
+static BOOL isYouTubeDomain(NSString *host) {
+    if (!host) return NO;
+    host = [host lowercaseString];
+    return [host hasSuffix:@".youtube.com"] ||
+           [host isEqualToString:@"youtube.com"] ||
+           [host hasSuffix:@".googleapis.com"] ||
+           [host isEqualToString:@"googleapis.com"] ||
+           [host hasSuffix:@".googlevideo.com"] ||
+           [host hasSuffix:@".ytimg.com"];
+}
+
+static NSURL *urlWithGLParameter(NSURL *url, NSString *region) {
+    if (!url || !region.length) return url;
+    NSString *absoluteString = [url absoluteString];
+
+    // Only inject GL into API-style requests, not media/image URLs
+    NSString *host = [[url host] lowercaseString];
+    if (!host) return url;
+    BOOL isAPI = [host hasSuffix:@".youtube.com"] || [host hasSuffix:@".googleapis.com"];
+    if (!isAPI) return url;
+
+    NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
+    if (!components) return url;
+
+    NSMutableArray<NSURLQueryItem *> *queryItems = [components.queryItems mutableCopy] ?: [NSMutableArray array];
+
+    // Remove existing gl/GL parameter
+    NSMutableArray *toRemove = [NSMutableArray array];
+    for (NSURLQueryItem *item in queryItems) {
+        if ([[item.name lowercaseString] isEqualToString:@"gl"]) {
+            [toRemove addObject:item];
+        }
+    }
+    [queryItems removeObjectsInArray:toRemove];
+
+    // Add our region
+    [queryItems addObject:[NSURLQueryItem queryItemWithName:@"gl" value:[region uppercaseString]]];
+    components.queryItems = queryItems;
+
+    return components.URL ?: url;
+}
+
 %hook NSMutableURLRequest
 - (void)setURL:(NSURL *)url {
-    %orig;
     NSString *region = [[NSUserDefaults standardUserDefaults] stringForKey:@"YTLSelectedRegion"];
-    if (region.length > 0) {
-        [self setValue:[region uppercaseString] forHTTPHeaderField:@"X-Goog-Country"];
+    if (region.length > 0 && isYouTubeDomain([url host])) {
+        NSString *uppercaseRegion = [region uppercaseString];
+
+        // Inject GL parameter into YouTube API URLs
+        NSURL *modifiedURL = urlWithGLParameter(url, uppercaseRegion);
+        %orig(modifiedURL);
+
+        // Set region headers
+        [self setValue:uppercaseRegion forHTTPHeaderField:@"X-Goog-Country"];
+        [self setValue:uppercaseRegion forHTTPHeaderField:@"X-YouTube-Client-Geo-Location"];
+    } else {
+        %orig;
     }
 }
 %end
