@@ -334,6 +334,29 @@ static NSString *GetCacheSize() {
 
     [sectionItems addObject:regionOverride];
 
+    // Launch VPN shortcut
+    YTSettingsSectionItem *launchVPN = [YTSettingsSectionItemClass itemWithTitle:@"Launch Windscribe VPN"
+        accessibilityIdentifier:@"YTLiteSectionItem"
+        detailTextBlock:^NSString *() {
+            return @"🛡️";
+        }
+        selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
+            NSURL *windscribeURL = [NSURL URLWithString:@"windscribe://"];
+            NSURL *appStoreURL = [NSURL URLWithString:@"https://apps.apple.com/app/windscribe-vpn/id1129435228"];
+
+            UIApplication *app = [UIApplication sharedApplication];
+            if ([app canOpenURL:windscribeURL]) {
+                [app openURL:windscribeURL options:@{} completionHandler:nil];
+            } else {
+                // Windscribe not installed — open App Store
+                [app openURL:appStoreURL options:@{} completionHandler:nil];
+                [[%c(YTToastResponderEvent) eventWithMessage:@"Windscribe not installed. Opening App Store..." firstResponder:[self parentResponder]] send];
+            }
+            return YES;
+        }];
+
+    [sectionItems addObject:launchVPN];
+
     if (ytlBool(@"advancedMode")) {
         YTSettingsSectionItem *other = [YTSettingsSectionItemClass itemWithTitle:LOC(@"Other")
         accessibilityIdentifier:@"YTLiteSectionItem"
