@@ -110,11 +110,9 @@ jobs:
         if: ${{ inputs.tweak_url == '' }}
         run: |
           # YTNativeShare.x imports ../protobuf/objectivec/*.h
+          # Must use v3.21.12 — newer versions removed GPBUnknownFieldSet.h
           if [ ! -d "${{ github.workspace }}/../protobuf" ]; then
-            git clone --quiet -n --depth=1 --filter=tree:0 https://github.com/protocolbuffers/protobuf.git "${{ github.workspace }}/../protobuf"
-            cd "${{ github.workspace }}/../protobuf"
-            git sparse-checkout set --no-cone objectivec
-            git checkout
+            git clone --quiet --depth=1 --branch v3.21.12 https://github.com/protocolbuffers/protobuf.git "${{ github.workspace }}/../protobuf"
           fi
 
       - name: Create roothide.h stub
