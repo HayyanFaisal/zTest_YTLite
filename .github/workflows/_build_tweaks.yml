@@ -106,19 +106,22 @@ jobs:
             cp -r "$THEOS/include/YouTubeHeader" "$THEOS/include/YTHeaders"
           fi
 
+      - name: Clone protobuf headers
+        if: ${{ inputs.tweak_url == '' }}
+        run: |
+          # YTNativeShare.x imports ../protobuf/objectivec/*.h
+          if [ ! -d "${{ github.workspace }}/../protobuf" ]; then
+            git clone --quiet -n --depth=1 --filter=tree:0 https://github.com/protocolbuffers/protobuf.git "${{ github.workspace }}/../protobuf"
+            cd "${{ github.workspace }}/../protobuf"
+            git sparse-checkout set --no-cone objectivec
+            git checkout
+          fi
+
       - name: Create roothide.h stub
         if: ${{ inputs.tweak_url == '' }}
         run: |
-          # roothide.h provides jbroot() for rootless jailbreaks.
-          # For sideloaded builds, we stub it as a no-op passthrough.
           if [ ! -f "$THEOS/include/roothide.h" ]; then
-            cat > "$THEOS/include/roothide.h" << 'EOF'
-          #ifndef _ROOTHIDE_H
-          #define _ROOTHIDE_H
-          #define jbroot(x) (x)
-          #define rootfs(x) (x)
-          #endif
-          EOF
+            printf '#ifndef _ROOTHIDE_H\n#define _ROOTHIDE_H\n#define jbroot(x) (x)\n#define rootfs(x) (x)\n#endif\n' > "$THEOS/include/roothide.h"
           fi
 
       - name: Build YouTube Plus from source
