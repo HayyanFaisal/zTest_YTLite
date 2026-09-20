@@ -92,6 +92,14 @@ BOOL isSelf() {
     if (info[@"CFBundleIdentifier"]) info[@"CFBundleIdentifier"] = YT_BUNDLE_ID;
     if (info[@"CFBundleDisplayName"]) info[@"CFBundleDisplayName"] = YT_NAME;
     if (info[@"CFBundleName"]) info[@"CFBundleName"] = YT_NAME;
+
+    // Allow canOpenURL: to detect Windscribe VPN
+    NSMutableArray *schemes = [info[@"LSApplicationQueriesSchemes"] mutableCopy] ?: [NSMutableArray array];
+    if (![schemes containsObject:@"windscribe"]) {
+        [schemes addObject:@"windscribe"];
+        info[@"LSApplicationQueriesSchemes"] = schemes;
+    }
+
     return info;
 }
 
