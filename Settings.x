@@ -297,6 +297,43 @@ static NSString *GetCacheSize() {
 
     [sectionItems addObject:tabbar];
 
+    // Region Override
+    YTSettingsSectionItem *regionOverride = [YTSettingsSectionItemClass itemWithTitle:@"Override YouTube Region"
+        accessibilityIdentifier:@"YTLiteSectionItem"
+        detailTextBlock:^NSString *() {
+            NSString *region = [[NSUserDefaults standardUserDefaults] stringForKey:@"YTLSelectedRegion"];
+            return (region.length > 0) ? [region uppercaseString] : @"Auto";
+        }
+        selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
+            UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Override YouTube Region"
+                message:@"Enter a 2-letter country code (e.g. US, GB, PK).\nLeave empty to use the default region."
+                preferredStyle:UIAlertControllerStyleAlert];
+
+            [alert addTextFieldWithConfigurationHandler:^(UITextField *textField) {
+                textField.placeholder = @"e.g. US";
+                textField.autocapitalizationType = UITextAutocapitalizationTypeAllCharacters;
+                NSString *current = [[NSUserDefaults standardUserDefaults] stringForKey:@"YTLSelectedRegion"];
+                if (current.length > 0) textField.text = [current uppercaseString];
+            }];
+
+            [alert addAction:[UIAlertAction actionWithTitle:LOC(@"No") style:UIAlertActionStyleCancel handler:nil]];
+            [alert addAction:[UIAlertAction actionWithTitle:@"Save" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+                NSString *input = [alert.textFields.firstObject.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+                if (input.length == 0) {
+                    [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"YTLSelectedRegion"];
+                } else {
+                    [[NSUserDefaults standardUserDefaults] setObject:[input uppercaseString] forKey:@"YTLSelectedRegion"];
+                }
+                [[NSUserDefaults standardUserDefaults] synchronize];
+                [settingsViewController reloadData];
+            }]];
+
+            [[%c(YTUIUtils) topViewControllerForPresenting] presentViewController:alert animated:YES completion:nil];
+            return YES;
+        }];
+
+    [sectionItems addObject:regionOverride];
+
     if (ytlBool(@"advancedMode")) {
         YTSettingsSectionItem *other = [YTSettingsSectionItemClass itemWithTitle:LOC(@"Other")
         accessibilityIdentifier:@"YTLiteSectionItem"

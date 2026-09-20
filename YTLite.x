@@ -1379,6 +1379,16 @@ static NSURL *newCoverURL(NSURL *originalURL) {
 //     return %orig(newCoverURL(arg1), arg2, arg3, arg4, arg5);
 // }
 // %end
+// Region Override — inject custom X-Goog-Country header
+%hook NSMutableURLRequest
+- (void)setURL:(NSURL *)url {
+    %orig;
+    NSString *region = [[NSUserDefaults standardUserDefaults] stringForKey:@"YTLSelectedRegion"];
+    if (region.length > 0) {
+        [self setValue:[region uppercaseString] forHTTPHeaderField:@"X-Goog-Country"];
+    }
+}
+%end
 
 %ctor {
     if (ytlBool(@"shortsOnlyMode") && (ytlBool(@"removeShorts") || ytlBool(@"reExplore"))) {
