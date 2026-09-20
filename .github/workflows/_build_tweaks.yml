@@ -106,6 +106,21 @@ jobs:
             cp -r "$THEOS/include/YouTubeHeader" "$THEOS/include/YTHeaders"
           fi
 
+      - name: Create roothide.h stub
+        if: ${{ inputs.tweak_url == '' }}
+        run: |
+          # roothide.h provides jbroot() for rootless jailbreaks.
+          # For sideloaded builds, we stub it as a no-op passthrough.
+          if [ ! -f "$THEOS/include/roothide.h" ]; then
+            cat > "$THEOS/include/roothide.h" << 'EOF'
+          #ifndef _ROOTHIDE_H
+          #define _ROOTHIDE_H
+          #define jbroot(x) (x)
+          #define rootfs(x) (x)
+          #endif
+          EOF
+          fi
+
       - name: Build YouTube Plus from source
         if: ${{ inputs.tweak_url == '' }}
         run: |
