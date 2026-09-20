@@ -1393,7 +1393,6 @@ static BOOL isYouTubeDomain(NSString *host) {
 
 static NSURL *urlWithGLParameter(NSURL *url, NSString *region) {
     if (!url || !region.length) return url;
-    NSString *absoluteString = [url absoluteString];
 
     // Only inject GL into API-style requests, not media/image URLs
     NSString *host = [[url host] lowercaseString];
